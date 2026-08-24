@@ -4,15 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -26,26 +18,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,8 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -122,13 +111,12 @@ fun FolderScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            val fileName = "file_${System.currentTimeMillis()}"
+            val fileName = "doc_${System.currentTimeMillis()}"
             storageManager.importUri(currentDir, it, fileName)
             refresh()
         }
     }
 
-    // Hardware/Gesture back handler
     BackHandler(enabled = activeViewerFile != null || isSelectionMode || currentDir != storageManager.getVaultRoot()) {
         when {
             activeViewerFile != null -> activeViewerFile = null
@@ -165,11 +153,10 @@ fun FolderScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // Top Bar Area with Smooth Drag gesture
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 12.dp)
+                    .padding(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 10.dp)
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures { _, dragAmount ->
                             if (dragAmount < -20f) isSearchExpanded = true
@@ -178,7 +165,6 @@ fun FolderScreen(
                     }
             ) {
                 if (isSelectionMode) {
-                    // Contextual Action Bar
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -188,12 +174,7 @@ fun FolderScreen(
                             IconButton(onClick = { selectedItems.value = emptySet() }) {
                                 Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
                             }
-                            Text(
-                                text = "${selectedItems.value.size} Selected",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("${selectedItems.value.size} Selected", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,7 +192,6 @@ fun FolderScreen(
                         }
                     }
                 } else if (isSearchExpanded) {
-                    // Spring Animated Search Bar
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
@@ -233,7 +213,6 @@ fun FolderScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else {
-                    // Normal TopBar
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -242,7 +221,7 @@ fun FolderScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (currentDir != storageManager.getVaultRoot()) {
                                 IconButton(onClick = { currentDir = currentDir.parentFile ?: storageManager.getVaultRoot() }) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                                 }
                             }
                             Text(
@@ -254,6 +233,12 @@ fun FolderScreen(
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { isCreateFolderOpen = true }) {
+                                Icon(Icons.Default.CreateNewFolder, contentDescription = "New Folder", tint = Color(0xFF8B5CF6))
+                            }
+                            IconButton(onClick = { filePickerLauncher.launch("*/*") }) {
+                                Icon(Icons.Default.UploadFile, contentDescription = "Upload", tint = Color(0xFF06B6D4))
+                            }
                             IconButton(onClick = { isSearchExpanded = true }) {
                                 Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White)
                             }
@@ -268,7 +253,6 @@ fun FolderScreen(
                 }
             }
 
-            // Grid Content
             LazyVerticalGrid(
                 columns = GridCells.Fixed(gridColumns),
                 modifier = Modifier
@@ -359,7 +343,6 @@ fun FolderScreen(
             }
         }
 
-        // Dialogs & Drawers
         SlideMenuPanel(
             isOpen = isDrawerOpen,
             onClose = { isDrawerOpen = false },
@@ -372,6 +355,19 @@ fun FolderScreen(
             },
             onCreateBadgeClick = { isCreateBadgeOpen = true }
         )
+
+        if (isCreateFolderOpen) {
+            SimpleInputDialog(
+                title = "Create New Folder",
+                confirmButtonText = "Create",
+                onDismiss = { isCreateFolderOpen = false },
+                onConfirm = { name ->
+                    storageManager.createFolder(currentDir, name)
+                    isCreateFolderOpen = false
+                    refresh()
+                }
+            )
+        }
 
         if (isCreateBadgeOpen) {
             CreateBadgeDialog(
@@ -405,8 +401,8 @@ fun FolderScreen(
                 onThemeChange = onThemeChange,
                 currentGridCols = gridColumns,
                 onGridColsChange = { gridColumns = it },
-                onExportBackup = { /* Handled via Share Sheet */ },
-                onImportBackup = { /* Handled via Intent */ },
+                onExportBackup = { },
+                onImportBackup = { },
                 onDismiss = { isSettingsOpen = false }
             )
         }
