@@ -22,9 +22,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -93,7 +93,6 @@ fun FlashcardRevisionScreen(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Clean Top Navigation Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -102,7 +101,7 @@ fun FlashcardRevisionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                 }
                 Text(
                     text = deck.name,
@@ -144,7 +143,6 @@ fun FlashcardRevisionScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 3D Glass Flip Card
                 GlassBox(
                     shape = RoundedCornerShape(28.dp),
                     backgroundColors = listOf(Color(0xFF1A1528).copy(alpha = 0.9f), Color(0xFF0F0C18).copy(alpha = 0.95f)),
@@ -205,7 +203,6 @@ fun FlashcardRevisionScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Mastery Toggle Button
                 ElevatedButton(
                     onClick = {
                         val updated = currentCards.toMutableList()
@@ -231,7 +228,6 @@ fun FlashcardRevisionScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Navigation Controls (Prev / Next)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -248,7 +244,7 @@ fun FlashcardRevisionScreen(
                         },
                         enabled = currentIndex > 0
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) Color.White else Color.White.copy(alpha = 0.2f))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Previous", tint = if (currentIndex > 0) Color.White else Color.White.copy(alpha = 0.2f))
                     }
 
                     IconButton(onClick = { isAddCardOpen = true }) {
@@ -264,13 +260,12 @@ fun FlashcardRevisionScreen(
                         },
                         enabled = currentIndex < currentCards.size - 1
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", tint = if (currentIndex < currentCards.size - 1) Color.White else Color.White.copy(alpha = 0.2f))
+                        Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = if (currentIndex < currentCards.size - 1) Color.White else Color.White.copy(alpha = 0.2f))
                     }
                 }
             }
         }
 
-        // Expanded Large-Text Reader Overlay
         if (activeExpandedText != null) {
             Dialog(onDismissRequest = { activeExpandedText = null }) {
                 GlassBox(
@@ -307,7 +302,6 @@ fun FlashcardRevisionScreen(
             }
         }
 
-        // Card Manager Sheet (Re-order / Delete / Edit)
         if (isManagerOpen) {
             Dialog(onDismissRequest = { isManagerOpen = false }) {
                 GlassBox(
@@ -357,7 +351,6 @@ fun FlashcardRevisionScreen(
             }
         }
 
-        // Add Card Dialog
         if (isAddCardOpen) {
             var qText by remember { mutableStateOf("") }
             var aText by remember { mutableStateOf("") }
