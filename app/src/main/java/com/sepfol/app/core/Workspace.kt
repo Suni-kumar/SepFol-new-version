@@ -55,28 +55,27 @@ fun WorkspaceRootContainer(
     Box(modifier = Modifier.fillMaxSize()) {
         content()
 
-        // Switcher Dock Triggered by Drag-Up
         AnimatedVisibility(
             visible = isDockOpen,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp)
+                .padding(bottom = 96.dp)
         ) {
             GlassBox(
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier.padding(horizontal = 24.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     GlassBox(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         backgroundColors = if (currentWorkspace == Workspace.DATA) {
-                            listOf(Color(0xFF8B5CF6).copy(alpha = 0.5f), Color(0xFF6D28D9).copy(alpha = 0.6f))
+                            listOf(Color(0xFF8B5CF6).copy(alpha = 0.6f), Color(0xFF6D28D9).copy(alpha = 0.7f))
                         } else {
                             listOf(Color.Transparent, Color.Transparent)
                         },
@@ -96,9 +95,9 @@ fun WorkspaceRootContainer(
                     }
 
                     GlassBox(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         backgroundColors = if (currentWorkspace == Workspace.FLASHCARDS) {
-                            listOf(Color(0xFFEC4899).copy(alpha = 0.5f), Color(0xFFBE185D).copy(alpha = 0.6f))
+                            listOf(Color(0xFFEC4899).copy(alpha = 0.6f), Color(0xFFBE185D).copy(alpha = 0.7f))
                         } else {
                             listOf(Color.Transparent, Color.Transparent)
                         },
@@ -120,7 +119,6 @@ fun WorkspaceRootContainer(
             }
         }
 
-        // Main FAB with Drag-Up gesture support
         FloatingActionButton(
             onClick = {
                 if (isDockOpen) isDockOpen = false else onFabClick()
@@ -139,11 +137,8 @@ fun WorkspaceRootContainer(
                 .pointerInput(Unit) {
                     detectVerticalDragGestures { change, dragAmount ->
                         change.consume()
-                        if (dragAmount < -15) {
-                            isDockOpen = true
-                        } else if (dragAmount > 15) {
-                            isDockOpen = false
-                        }
+                        if (dragAmount < -15) isDockOpen = true
+                        else if (dragAmount > 15) isDockOpen = false
                     }
                 }
         ) {
