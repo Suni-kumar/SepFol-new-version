@@ -12,15 +12,30 @@ android {
         applicationId = "com.sepfol.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 100
-        versionName = "1.0.0"
+        // Auto-increment version so Android always allows updates
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1) + 100
+        versionName = "1.0.${versionCode}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Fixed Signature Config taaki bina uninstall kiye update ho sake
+    signingConfigs {
+        create("release") {
+            storeFile = file("sepfol_keystore.jks")
+            storePassword = "sepfolpassword"
+            keyAlias = "sepfol"
+            keyPassword = "sepfolpassword"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -52,4 +67,7 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.activity.compose)
     implementation(libs.coil.compose)
+    
+    // Core Splash Screen to eliminate blank screen lag
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }
