@@ -3,7 +3,6 @@ package com.sepfol.app.folder
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -18,30 +17,34 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.DriveFileRenameOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -58,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.sepfol.app.components.CreateBadgeDialog
 import com.sepfol.app.components.SettingsDialog
 import com.sepfol.app.components.SimpleInputDialog
@@ -75,7 +80,11 @@ import java.io.File
 @Composable
 fun FolderScreen(
     currentTheme: SepFolTheme,
-    onThemeChange: (SepFolTheme) -> Unit
+    onThemeChange: (SepFolTheme) -> Unit,
+    triggerCreateFolder: Boolean = false,
+    onFolderCreateHandled: () -> Unit = {},
+    triggerImportFile: Boolean = false,
+    onFileImportHandled: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val storageManager = remember { StorageManager(context) }
@@ -92,6 +101,8 @@ fun FolderScreen(
     var isSettingsOpen by remember { mutableStateOf(false) }
     var isCreateBadgeOpen by remember { mutableStateOf(false) }
     var isCreateFolderOpen by remember { mutableStateOf(false) }
+
+    var itemToManage by remember { mutableStateOf<VaultItem?>(null) }
     var renameTarget by remember { mutableStateOf<VaultItem?>(null) }
 
     var gridColumns by remember { mutableIntStateOf(2) }
@@ -111,9 +122,22 @@ fun FolderScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            val fileName = "doc_${System.currentTimeMillis()}"
-            storageManager.importUri(currentDir, it, fileName)
+            storageManager.importUri(currentDir, it)
             refresh()
+        }
+    }
+
+    LaunchedEffect(triggerCreateFolder) {
+        if (triggerCreateFolder) {
+            isCreateFolderOpen = true
+            onFolderCreateHandled()
+        }
+    }
+
+    LaunchedEffect(triggerImportFile) {
+        if (triggerImportFile) {
+            filePickerLauncher.launch("*/*")
+            onFileImportHandled()
         }
     }
 
@@ -138,10 +162,11 @@ fun FolderScreen(
     val filteredList = items.filter { item ->
         val matchesSearch = item.name.contains(searchQuery, ignoreCase = true)
         val starred = metadataManager.getStarredPaths().contains(item.file.absolutePath)
+        val itemBadges = metadataManager.getItemBadges(item.file.absolutePath)
         val matchesFilter = when (filterMode) {
             VaultFilterMode.ALL -> true
             VaultFilterMode.STARRED -> starred
-            VaultFilterMode.BADGE -> true
+            VaultFilterMode.BADGE -> selectedBadgeId != null && itemBadges.contains(selectedBadgeId)
         }
         matchesSearch && matchesFilter
     }
@@ -153,6 +178,7 @@ fun FolderScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
+            // Top Bar with Left-Swipe Search & Clean Single Menu
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,7 +186,7 @@ fun FolderScreen(
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures { _, dragAmount ->
                             if (dragAmount < -20f) isSearchExpanded = true
-                            else if (dragAmount > 20f && searchQuery.isEmpty()) isSearchExpanded = false
+                            else if (dragAmount > 20f) isSearchExpanded = false
                         }
                     }
             ) {
@@ -179,8 +205,8 @@ fun FolderScreen(
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (selectedItems.value.size == 1) {
-                                IconButton(onClick = { renameTarget = selectedItems.value.first() }) {
-                                    Icon(Icons.Default.DriveFileRenameOutline, contentDescription = "Rename", tint = Color.White)
+                                IconButton(onClick = { itemToManage = selectedItems.value.first() }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Manage Item", tint = Color(0xFF8B5CF6))
                                 }
                             }
                             IconButton(onClick = {
@@ -232,22 +258,8 @@ fun FolderScreen(
                             )
                         }
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { isCreateFolderOpen = true }) {
-                                Icon(Icons.Default.CreateNewFolder, contentDescription = "New Folder", tint = Color(0xFF8B5CF6))
-                            }
-                            IconButton(onClick = { filePickerLauncher.launch("*/*") }) {
-                                Icon(Icons.Default.UploadFile, contentDescription = "Upload", tint = Color(0xFF06B6D4))
-                            }
-                            IconButton(onClick = { isSearchExpanded = true }) {
-                                Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White)
-                            }
-                            IconButton(onClick = { isSettingsOpen = true }) {
-                                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
-                            }
-                            IconButton(onClick = { isDrawerOpen = true }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Filters", tint = Color.White)
-                            }
+                        IconButton(onClick = { isDrawerOpen = true }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Filters & Settings", tint = Color.White)
                         }
                     }
                 }
@@ -265,6 +277,7 @@ fun FolderScreen(
                 items(filteredList) { item ->
                     val isSelected = selectedItems.value.contains(item)
                     val isStarred = metadataManager.getStarredPaths().contains(item.file.absolutePath)
+                    val assignedBadges = metadataManager.getItemBadges(item.file.absolutePath)
 
                     GlassBox(
                         shape = RoundedCornerShape(16.dp),
@@ -319,7 +332,7 @@ fun FolderScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
                                 text = item.name,
@@ -332,11 +345,30 @@ fun FolderScreen(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            Text(
-                                text = if (item.isDirectory) "${item.itemCount} items" else "${item.sizeBytes / 1024} KB",
-                                color = Color.White.copy(alpha = 0.45f),
-                                fontSize = 11.sp
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (item.isDirectory) "${item.itemCount} items" else "${item.sizeBytes / 1024} KB",
+                                    color = Color.White.copy(alpha = 0.45f),
+                                    fontSize = 11.sp
+                                )
+
+                                if (assignedBadges.isNotEmpty()) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        assignedBadges.take(3).forEach {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(6.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFF8B5CF6))
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -355,6 +387,97 @@ fun FolderScreen(
             },
             onCreateBadgeClick = { isCreateBadgeOpen = true }
         )
+
+        // Item Manage Sheet (Rename, Delete & Multi-Badge Picker)
+        if (itemToManage != null) {
+            val item = itemToManage!!
+            val allBadges = metadataManager.loadBadges()
+            var currentItemBadges by remember { mutableStateOf(metadataManager.getItemBadges(item.file.absolutePath)) }
+
+            Dialog(onDismissRequest = { itemToManage = null }) {
+                GlassBox(
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(22.dp)) {
+                        Text(item.name, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ElevatedButton(
+                                onClick = {
+                                    renameTarget = item
+                                    itemToManage = null
+                                },
+                                colors = ButtonDefaults.elevatedButtonColors(containerColor = Color(0xFF8B5CF6), contentColor = Color.White),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Rename")
+                            }
+
+                            ElevatedButton(
+                                onClick = {
+                                    storageManager.deleteItem(item.file)
+                                    itemToManage = null
+                                    refresh()
+                                },
+                                colors = ButtonDefaults.elevatedButtonColors(containerColor = Color(0xFFEF4444), contentColor = Color.White),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Delete")
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text("ASSIGN BADGES / TAGS", color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        LazyColumn(
+                            modifier = Modifier.height(150.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(allBadges) { badge ->
+                                val isAssigned = currentItemBadges.contains(badge.id)
+                                val badgeColor = try { Color(android.graphics.Color.parseColor(badge.colorHex)) } catch (e: Exception) { Color(0xFF8B5CF6) }
+
+                                GlassBox(
+                                    shape = RoundedCornerShape(10.dp),
+                                    backgroundColors = if (isAssigned) listOf(badgeColor.copy(alpha = 0.35f), badgeColor.copy(alpha = 0.15f)) else listOf(Color.White.copy(alpha = 0.05f), Color.White.copy(alpha = 0.02f)),
+                                    onClick = {
+                                        val updated = if (isAssigned) currentItemBadges - badge.id else currentItemBadges + badge.id
+                                        currentItemBadges = updated
+                                        metadataManager.setItemBadges(item.file.absolutePath, updated)
+                                        refresh()
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(badgeColor))
+                                            Text(badge.name, color = Color.White, fontSize = 13.sp)
+                                        }
+                                        if (isAssigned) Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(onClick = { itemToManage = null }) { Text("Done", color = Color.White) }
+                        }
+                    }
+                }
+            }
+        }
 
         if (isCreateFolderOpen) {
             SimpleInputDialog(
