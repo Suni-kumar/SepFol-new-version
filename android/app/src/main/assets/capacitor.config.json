@@ -1,0 +1,6 @@
+{
+	"appId": "com.sepfol.app",
+	"appName": "SepFol",
+	"webDir": "dist",
+	"bundledWebRuntime": false
+}
