@@ -15,12 +15,17 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
   const initialPage = storage.getPdfPage(item.id) || 1;
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [zoom, setZoom] = useState(100);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(() => storage.getStarredPaths().has(item.id));
 
   // Save current page position bookmark
   useEffect(() => {
     storage.savePdfPage(item.id, currentPage);
   }, [item.id, currentPage]);
+
+  const handleToggleBookmark = () => {
+    const isNowStarred = storage.toggleStar(item.id);
+    setIsBookmarked(isNowStarred);
+  };
 
   const handleDownload = () => {
     if (!item.contentData) return;
@@ -106,7 +111,7 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
           </div>
 
           <button
-            onClick={() => setIsBookmarked(!isBookmarked)}
+            onClick={handleToggleBookmark}
             className={`p-2 rounded-lg border transition ${
               isBookmarked
                 ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
