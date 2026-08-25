@@ -1,24 +1,33 @@
 package com.sepfol.app.core
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material.icons.filled.Style
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -30,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -43,18 +54,41 @@ enum class Workspace(val title: String) {
     FLASHCARDS("SepFol Flashcards")
 }
 
+data class SpeedDialOption(
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val color: Color,
+    val onClick: () -> Unit
+)
+
 @Composable
 fun WorkspaceRootContainer(
     currentWorkspace: Workspace,
+    speedDialOptions: List<SpeedDialOption>,
     onWorkspaceChange: (Workspace) -> Unit,
-    onFabClick: () -> Unit,
     content: @Composable () -> Unit
 ) {
     var isDockOpen by remember { mutableStateOf(false) }
+    var isFabExpanded by remember { mutableStateOf(false) }
+
+    val fabRotation by animateFloatAsState(
+        targetValue = if (isFabExpanded) 45f else 0f,
+        label = "FabRotation"
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         content()
 
+        if (isFabExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { isFabExpanded = false }
+            )
+        }
+
+        // Workspace Switcher Dock (Swipe Up)
         AnimatedVisibility(
             visible = isDockOpen,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
@@ -119,35 +153,99 @@ fun WorkspaceRootContainer(
             }
         }
 
-        FloatingActionButton(
-            onClick = {
-                if (isDockOpen) isDockOpen = false else onFabClick()
-            },
-            shape = CircleShape,
-            containerColor = Color.Transparent,
-            elevation = FloatingActionButtonDefaults.elevation(0.dp),
+        // Speed Dial Vertical Actions Menu
+        AnimatedVisibility(
+            visible = isFabExpanded && !isDockOpen,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 96.dp, end = 24.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                speedDialOptions.forEach { option ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.clickable {
+                            isFabExpanded = false
+                            option.onClick()
+                        }
+                    ) {
+                        GlassBox(
+                            shape = RoundedCornerShape(10.dp),
+                            backgroundColors = listOf(Color(0xFF13111C).copy(alpha = 0.9f), Color(0xFF09070F).copy(alpha = 0.95f))
+                        ) {
+                            Text(
+                                text = option.label,
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(option.color),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(imageVector = option.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // Universal Smart FAB (Rotates to X & Disappears on Swipe Up)
+        AnimatedVisibility(
+            visible = !isDockOpen,
+            enter = fadeIn(),
+            exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
-                .size(60.dp)
-                .background(
-                    brush = Brush.linearGradient(listOf(Color(0xFF8B5CF6), Color(0xFFEC4899))),
-                    shape = CircleShape
-                )
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures { change, dragAmount ->
-                        change.consume()
-                        if (dragAmount < -15) isDockOpen = true
-                        else if (dragAmount > 15) isDockOpen = false
-                    }
-                }
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Action FAB",
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
+            FloatingActionButton(
+                onClick = { isFabExpanded = !isFabExpanded },
+                shape = if (isFabExpanded) RoundedCornerShape(18.dp) else CircleShape,
+                containerColor = Color.Transparent,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp),
+                modifier = Modifier
+                    .size(60.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            if (isFabExpanded) listOf(Color(0xFFEF4444), Color(0xFFDC2626))
+                            else listOf(Color(0xFF8B5CF6), Color(0xFFEC4899))
+                        ),
+                        shape = if (isFabExpanded) RoundedCornerShape(18.dp) else CircleShape
+                    )
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { change, dragAmount ->
+                            change.consume()
+                            if (dragAmount < -15) {
+                                isFabExpanded = false
+                                isDockOpen = true
+                            } else if (dragAmount > 15) {
+                                isDockOpen = false
+                            }
+                        }
+                    }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Smart FAB",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .rotate(fabRotation)
+                )
+            }
         }
     }
 }
