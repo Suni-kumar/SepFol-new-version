@@ -1,0 +1,6 @@
+{
+  "name": "SepFol",
+  "description": "Cyber-AMOLED data vault, file organizer, revision flashcards, and study focus timer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
