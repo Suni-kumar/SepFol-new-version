@@ -16,6 +16,7 @@ import {
 import { FlashDeck, FlashCard } from '../types';
 import { storage } from '../storage/db';
 import { GlassBox } from '../components/GlassBox';
+import { triggerHaptic } from '../utils/haptics';
 
 interface FlashcardRevisionScreenProps {
   deck: FlashDeck;
@@ -64,6 +65,7 @@ export const FlashcardRevisionScreen: React.FC<FlashcardRevisionScreenProps> = (
 
   const handleToggleMastered = () => {
     if (!currentCard) return;
+    triggerHaptic('success');
     const nextMastered = !currentCard.isMastered;
     const updated = cards.map((c, i) =>
       i === currentIndex ? { ...c, isMastered: nextMastered } : c
@@ -82,6 +84,7 @@ export const FlashcardRevisionScreen: React.FC<FlashcardRevisionScreenProps> = (
 
   const handleNext = () => {
     if (currentIndex < cards.length - 1) {
+      triggerHaptic('selection');
       setIsFlipped(false);
       setCurrentIndex((prev) => prev + 1);
     }
@@ -89,6 +92,7 @@ export const FlashcardRevisionScreen: React.FC<FlashcardRevisionScreenProps> = (
 
   const handlePrev = () => {
     if (currentIndex > 0) {
+      triggerHaptic('selection');
       setIsFlipped(false);
       setCurrentIndex((prev) => prev - 1);
     }
@@ -199,7 +203,10 @@ export const FlashcardRevisionScreen: React.FC<FlashcardRevisionScreenProps> = (
 
             {/* 3D Flippable Card Stage */}
             <div
-              onClick={() => setIsFlipped(!isFlipped)}
+              onClick={() => {
+                triggerHaptic('flip');
+                setIsFlipped(!isFlipped);
+              }}
               className="w-full min-h-[300px] sm:min-h-[340px] perspective-1000 cursor-pointer"
             >
               <motion.div
@@ -281,7 +288,10 @@ export const FlashcardRevisionScreen: React.FC<FlashcardRevisionScreenProps> = (
               </button>
 
               <button
-                onClick={() => setIsFlipped(!isFlipped)}
+                onClick={() => {
+                  triggerHaptic('flip');
+                  setIsFlipped(!isFlipped);
+                }}
                 className="p-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white transition"
                 title="Flip Card"
               >

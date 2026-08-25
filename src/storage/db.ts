@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
   LIQUID_GLASS_COLOR: 'sepfol_liquid_glass_color',
   GRID_COLS: 'sepfol_grid_cols',
   DECK_GRID_COLS: 'sepfol_deck_grid_cols',
+  HAPTICS_ENABLED: 'sepfol_haptics_enabled',
 };
 
 // Initial Seed Data
@@ -470,6 +471,14 @@ class StorageManager {
 
   saveAppTheme(theme: SepFolThemeType): void {
     this.setStorage(STORAGE_KEYS.APP_THEME, theme);
+  }
+
+  getHapticsEnabled(): boolean {
+    return this.getStorage<boolean>(STORAGE_KEYS.HAPTICS_ENABLED, true);
+  }
+
+  saveHapticsEnabled(enabled: boolean): void {
+    this.setStorage(STORAGE_KEYS.HAPTICS_ENABLED, enabled);
   }
 
   // Backup & Restore

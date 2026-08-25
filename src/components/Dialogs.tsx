@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Check, Download, Upload, Trash2, Edit2, Tag } from 'lucide-react';
+import { X, Check, Download, Upload, Trash2, Edit2, Tag, Vibrate } from 'lucide-react';
 import { CustomBadge, SepFolThemeType, VaultItem, LiquidGlassColor } from '../types';
 import { GlassBox } from './GlassBox';
 import { useTheme } from '../context/ThemeContext';
 import { Sparkles, Droplets } from 'lucide-react';
+import { storage } from '../storage/db';
+import { triggerHaptic } from '../utils/haptics';
 
 interface SimpleInputDialogProps {
   isOpen: boolean;
@@ -238,6 +240,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   onDismiss,
 }) => {
   const { visualMode, setVisualMode, liquidColor, setLiquidColor } = useTheme();
+  const [hapticsEnabled, setHapticsEnabled] = useState<boolean>(() => storage.getHapticsEnabled());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -396,7 +399,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <button
                     key={theme.id}
                     type="button"
-                    onClick={() => onThemeChange(theme.id)}
+                    onClick={() => {
+                      triggerHaptic('light');
+                      onThemeChange(theme.id);
+                    }}
                     className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition text-left ${
                       currentTheme === theme.id
                         ? 'bg-white/[0.12] border-white/40 text-white'
@@ -407,6 +413,40 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     <span className="text-xs font-medium truncate">{theme.name}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Haptic Feedback (Vibration) Toggle */}
+            <div className="mt-6 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                    <Vibrate className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white">Haptic Touch Feedback</div>
+                    <div className="text-[11px] text-white/50">Vibrate on FAB, workspace switch & cards</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !hapticsEnabled;
+                    setHapticsEnabled(next);
+                    storage.saveHapticsEnabled(next);
+                    if (next) triggerHaptic('medium');
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    hapticsEnabled ? 'bg-purple-600 shadow-md shadow-purple-900/50' : 'bg-white/20'
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      hapticsEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
             </div>
 

@@ -28,6 +28,7 @@ import {
   ItemManageModal
 } from '../components/Dialogs';
 import { useTheme } from '../context/ThemeContext';
+import { triggerHaptic } from '../utils/haptics';
 
 export interface FolderActionsHandle {
   createFolder: () => void;
@@ -418,6 +419,7 @@ export const FolderScreen: React.FC<FolderScreenProps> = ({
                 <GlassBox
                   key={item.id}
                   onClick={() => {
+                    triggerHaptic('selection');
                     if (isSelectionMode) {
                       toggleSelectItem(item.id);
                     } else if (item.isDirectory) {

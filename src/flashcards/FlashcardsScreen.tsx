@@ -14,6 +14,7 @@ import { storage } from '../storage/db';
 import { GlassBox } from '../components/GlassBox';
 import { SimpleInputDialog, SettingsDialog } from '../components/Dialogs';
 import { useTheme } from '../context/ThemeContext';
+import { triggerHaptic } from '../utils/haptics';
 
 export interface FlashcardsActionsHandle {
   createDeck: () => void;
@@ -202,6 +203,7 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
                 <GlassBox
                   key={deck.id}
                   onClick={() => {
+                    triggerHaptic('selection');
                     if (isSelectionMode) {
                       toggleSelectDeck(deck.id);
                     } else {

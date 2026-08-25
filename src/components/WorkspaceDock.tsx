@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { WorkspaceType, SpeedDialOption } from '../types';
 import { GlassBox } from './GlassBox';
+import { triggerHaptic } from '../utils/haptics';
 
 interface WorkspaceDockProps {
   currentWorkspace: WorkspaceType;
@@ -73,6 +74,7 @@ export const WorkspaceDock: React.FC<WorkspaceDockProps> = ({
   };
 
   const handleSelectWorkspace = (ws: WorkspaceType) => {
+    triggerHaptic('workspace');
     onWorkspaceChange(ws);
     setIsWorkspaceModalOpen(false);
   };
@@ -240,6 +242,7 @@ export const WorkspaceDock: React.FC<WorkspaceDockProps> = ({
                   transition={{ delay: 0 }}
                   className="flex items-center gap-3 cursor-pointer group"
                   onClick={() => {
+                    triggerHaptic('selection');
                     setIsFabExpanded(false);
                     setIsWorkspaceModalOpen(true);
                   }}
@@ -260,6 +263,7 @@ export const WorkspaceDock: React.FC<WorkspaceDockProps> = ({
                     transition={{ delay: (idx + 1) * 0.04 }}
                     className="flex items-center gap-3 cursor-pointer group"
                     onClick={() => {
+                      triggerHaptic('light');
                       setIsFabExpanded(false);
                       opt.onClick();
                     }}
@@ -295,6 +299,7 @@ export const WorkspaceDock: React.FC<WorkspaceDockProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+                triggerHaptic('fab');
                 setIsFabExpanded(!isFabExpanded);
               }}
               className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-950/70 transition-all ${
