@@ -7,6 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Security & Secrets
+.env
+.env.*
+*.keystore
+*.jks
+local.properties
+google-services.json
+# (Allow the base64 keystore for CI)
+!android/keystore.b64
+
 node_modules
 dist
 dist-ssr
