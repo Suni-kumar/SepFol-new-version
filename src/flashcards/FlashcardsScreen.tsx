@@ -312,6 +312,55 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
         onDismiss={() => setIsAiDeckOpen(false)}
         onConfirm={async (name, topic, count) => {
           try {
+            const localApiKey = storage.getGeminiApiKey();
+            
+            // IF USER HAS PROVIDED A LOCAL API KEY IN SETTINGS -> DIRECT GEMINI CALL
+            if (localApiKey && localApiKey.trim().length > 0) {
+              const { GoogleGenAI } = await import('@google/genai');
+              const ai = new GoogleGenAI({ apiKey: localApiKey.trim() });
+              
+              const safeCount = Math.min(Math.max(Number(count) || 15, 1), 100);
+              const prompt = `You are an expert tutor creating study flashcards.
+Create exactly ${safeCount} flashcards for the following topic or text: "${topic.replace(/"/g, '\\"')}".
+Each flashcard must have a concise question (front) and a clear, bulleted answer if appropriate (back).
+Respond strictly with a JSON array of objects, where each object has "front" (string) and "back" (string).
+Do not include markdown code block formatting in your output, just the raw JSON.`;
+
+              const response = await ai.models.generateContent({
+                model: "gemini-3.1-flash-lite",
+                contents: prompt,
+                config: {
+                  responseMimeType: "application/json",
+                }
+              });
+
+              if (!response.text) throw new Error("No response from Gemini API");
+              
+              let rawJson = response.text;
+              if (rawJson.startsWith("\`\`\`json")) rawJson = rawJson.replace(/^\`\`\`json\n/, "").replace(/\n\`\`\`$/, "");
+              else if (rawJson.startsWith("\`\`\`")) rawJson = rawJson.replace(/^\`\`\`\n/, "").replace(/\n\`\`\`$/, "");
+              
+              const cardsData = JSON.parse(rawJson);
+              
+              const newDeck = storage.createDeck(name);
+              if (Array.isArray(cardsData)) {
+                cardsData.forEach((c: { front: string; back: string }) => {
+                  newDeck.cards.push({
+                    id: 'card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    question: c.front,
+                    answer: c.back,
+                    isMastered: false
+                  });
+                });
+                const updatedDecks = storage.getDecks().map(d => d.id === newDeck.id ? newDeck : d);
+                storage.saveDecks(updatedDecks);
+              }
+              setIsAiDeckOpen(false);
+              refreshDecks();
+              return;
+            }
+
+            // OTHERWISE -> FALLBACK TO SERVER
             const baseUrl = Capacitor.isNativePlatform() 
               ? 'https://ais-pre-egtloc5g4ul6x4r7vrdzze-479837758603.asia-east1.run.app' 
               : '';
@@ -355,7 +404,7 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
             refreshDecks();
           } catch (e: any) {
             if (e.message.includes('Failed to fetch')) {
-              alert('Server not connected. Please click "Publish" in AI Studio to deploy your server so the mobile app can reach it.');
+              alert('Server not connected. The AI Studio proxy is blocking the connection. To fix this, we need to use a dedicated backend OR you can add your API key directly in the app settings (Settings -> Add API Key) to run it locally on your device.');
             } else {
               alert(e.message);
             }

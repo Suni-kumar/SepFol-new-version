@@ -481,6 +481,15 @@ class StorageManager {
     this.setStorage(STORAGE_KEYS.HAPTICS_ENABLED, enabled);
   }
 
+  // Gemini API Key (Client-side fallback)
+  getGeminiApiKey(): string {
+    return this.getStorage<string>('sepfol_gemini_key', '');
+  }
+  
+  saveGeminiApiKey(key: string): void {
+    this.setStorage('sepfol_gemini_key', key);
+  }
+
   // Backup & Restore
   exportWorkspaceJson(): string {
     const data = {

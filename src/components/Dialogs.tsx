@@ -450,6 +450,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               </div>
             </div>
 
+            {/* AI Setup / API Key */}
+            <div className="mt-6">
+              <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2.5">
+                AI API Key (Client-side Fallback)
+              </label>
+              <div className="text-xs text-white/40 mb-2">
+                If the AI Studio server is unreachable, paste your Gemini API key here to run AI flashcards entirely on your device.
+              </div>
+              <input
+                type="password"
+                placeholder="Enter Gemini API Key..."
+                defaultValue={storage.getGeminiApiKey()}
+                onBlur={(e) => storage.saveGeminiApiKey(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+              />
+            </div>
+
             {/* Backup & Restore */}
             <div className="mt-6">
               <label className="block text-xs font-bold text-white/50 uppercase tracking-wider mb-2.5">
