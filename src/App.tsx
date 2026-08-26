@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { WorkspaceType, VaultItem, FlashDeck, SpeedDialOption } from './types';
+import { storage } from './storage/db';
 import { SplashScreen } from './components/SplashScreen';
 import { FolderScreen, FolderActionsHandle } from './folder/FolderScreen';
 import { FlashcardsScreen, FlashcardsActionsHandle } from './flashcards/FlashcardsScreen';
@@ -128,7 +129,13 @@ function AppContent() {
         <FlashcardRevisionScreen
           deck={activeDeck}
           onBack={() => setActiveDeck(null)}
-          onDeckUpdated={() => {}}
+          onDeckUpdated={() => {
+            const allDecks = storage.getDecks();
+            const updated = allDecks.find((d) => d.id === activeDeck.id);
+            if (updated) {
+              setActiveDeck({ ...updated });
+            }
+          }}
         />
       ) : (
         <>
