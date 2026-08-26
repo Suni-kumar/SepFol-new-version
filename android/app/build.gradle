@@ -7,7 +7,7 @@ android {
         applicationId "com.sepfol.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
+        versionCode (project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 3)
         versionName "1.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

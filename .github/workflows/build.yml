@@ -60,7 +60,7 @@ jobs:
       - name: Build Native Android APK
         run: |
           cd android
-          gradle assembleDebug --no-daemon --stacktrace
+          gradle assembleDebug -PversionCode=${{ github.run_number }} --no-daemon --stacktrace
 
       - name: Upload SepFol APK Artifact
         uses: actions/upload-artifact@v4

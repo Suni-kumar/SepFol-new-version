@@ -315,16 +315,26 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
             const baseUrl = Capacitor.isNativePlatform() 
               ? 'https://ais-pre-egtloc5g4ul6x4r7vrdzze-479837758603.asia-east1.run.app' 
               : '';
+            
             const res = await fetch(`${baseUrl}/api/generate-flashcards`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ topic, count })
             });
+
+            const rawText = await res.text();
+            let data;
+            try {
+              data = JSON.parse(rawText);
+            } catch (err) {
+              console.error("API response was not JSON:", rawText);
+              throw new Error(`Server configuration error. Expected JSON but received HTML/Text. Please verify the backend is publicly accessible. Preview: ${rawText.substring(0, 50)}...`);
+            }
+
             if (!res.ok) {
-              const data = await res.json();
               throw new Error(data.error || 'Failed to generate flashcards');
             }
-            const data = await res.json();
+
             const newDeck = storage.createDeck(name);
             
             // Re-fetch all decks since createDeck updates storage but returns the object.
