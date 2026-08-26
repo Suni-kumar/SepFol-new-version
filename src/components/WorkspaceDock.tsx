@@ -41,6 +41,8 @@ export const WorkspaceDock: React.FC<WorkspaceDockProps> = ({
       case 'UploadFile':
       case 'Import':
         return <Upload className="w-4 h-4 text-white" />;
+      case 'Sparkles':
+        return <Sparkles className="w-4 h-4 text-white" />;
       case 'Timer':
       default:
         return <Timer className="w-4 h-4 text-white" />;

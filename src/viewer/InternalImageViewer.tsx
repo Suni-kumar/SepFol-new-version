@@ -52,12 +52,9 @@ export const InternalImageViewer: React.FC<InternalImageViewerProps> = ({
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     try {
-      if ((e.target as HTMLElement).hasPointerCapture(e.pointerId)) {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      }
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {}
   };
 

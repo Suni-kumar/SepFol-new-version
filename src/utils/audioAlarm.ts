@@ -11,7 +11,7 @@ function getAudioContext(): AudioContext {
     audioCtx = new AudioContextClass();
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
+    audioCtx.resume();
   }
   return audioCtx;
 }
@@ -22,7 +22,7 @@ export function initAudioOnUserInteraction() {
     try {
       const ctx = getAudioContext();
       if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
+        ctx.resume();
       }
     } catch {}
     window.removeEventListener('click', unlock);

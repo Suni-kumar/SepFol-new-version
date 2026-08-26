@@ -30,9 +30,9 @@ export const FloatingTimerWidget: React.FC<FloatingTimerWidgetProps> = ({
   const [customHours, setCustomHours] = useState('');
   const [customMins, setCustomMins] = useState('');
 
-  // Countdown timer loop & alarm cleanup on unmount/dismiss
+  // Countdown timer loop
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
+    let interval: NodeJS.Timeout | null = null;
     if (isRunning) {
       interval = setInterval(() => {
         setSecondsLeft((prev) => {
@@ -51,6 +51,7 @@ export const FloatingTimerWidget: React.FC<FloatingTimerWidgetProps> = ({
     };
   }, [isRunning]);
 
+  // Clean up alarm sound on unmount
   useEffect(() => {
     return () => {
       stopPhoneAlarm();

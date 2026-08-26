@@ -621,3 +621,136 @@ export const ItemManageModal: React.FC<ItemManageModalProps> = ({
     </AnimatePresence>
   );
 };
+
+interface AiDeckDialogProps {
+  isOpen: boolean;
+  onDismiss: () => void;
+  onConfirm: (name: string, topic: string, count: number) => void;
+}
+
+export const AiDeckDialog: React.FC<AiDeckDialogProps> = ({
+  isOpen,
+  onDismiss,
+  onConfirm,
+}) => {
+  const [deckName, setDeckName] = useState('');
+  const [topic, setTopic] = useState('');
+  const [count, setCount] = useState(15);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={!isGenerating ? onDismiss : undefined}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+        />
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          className="relative z-10 w-full max-w-lg"
+        >
+          <GlassBox className="p-6 border-white/20 bg-[#13111C]/95 shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white">AI Flashcards</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
+                  Deck Name
+                </label>
+                <input
+                  type="text"
+                  value={deckName}
+                  onChange={(e) => setDeckName(e.target.value)}
+                  placeholder="e.g. Biology Chapter 4"
+                  disabled={isGenerating}
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.06] border border-white/15 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 transition disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
+                  Topic or Source Text
+                </label>
+                <textarea
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Paste your notes or describe a topic..."
+                  rows={4}
+                  disabled={isGenerating}
+                  className="w-full px-4 py-3 rounded-xl bg-white/[0.06] border border-white/15 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 transition disabled:opacity-50 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
+                  Number of Cards ({count})
+                </label>
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  step="5"
+                  value={count}
+                  onChange={(e) => setCount(Number(e.target.value))}
+                  disabled={isGenerating}
+                  className="w-full accent-purple-500 disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-8">
+              <button
+                type="button"
+                onClick={onDismiss}
+                disabled={isGenerating}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!deckName.trim() || !topic.trim() || isGenerating}
+                onClick={async () => {
+                  if (deckName.trim() && topic.trim()) {
+                    setIsGenerating(true);
+                    await onConfirm(deckName.trim(), topic.trim(), count);
+                    setIsGenerating(false);
+                  }
+                }}
+                className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-purple-900/30 transition flex items-center gap-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                    />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Generate Deck
+                  </>
+                )}
+              </button>
+            </div>
+          </GlassBox>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+};

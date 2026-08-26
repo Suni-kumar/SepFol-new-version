@@ -33,6 +33,7 @@ import { triggerHaptic } from '../utils/haptics';
 export interface FolderActionsHandle {
   createFolder: () => void;
   importFile: () => void;
+  goBack: () => boolean;
 }
 
 interface FolderScreenProps {
@@ -99,6 +100,18 @@ export const FolderScreen: React.FC<FolderScreenProps> = ({
       actionsRef.current = {
         createFolder: () => setIsCreateFolderOpen(true),
         importFile: () => fileInputRef.current?.click(),
+        goBack: () => {
+          if (folderHistory.length > 1) {
+            const targetIndex = folderHistory.length - 2;
+            const target = folderHistory[targetIndex];
+            setCurrentFolderId(target.id);
+            setFolderHistory((prev) => prev.slice(0, targetIndex + 1));
+            setFilterMode('ALL');
+            setSelectedBadgeId(null);
+            return true;
+          }
+          return false;
+        }
       };
     }
     return () => {
@@ -106,7 +119,7 @@ export const FolderScreen: React.FC<FolderScreenProps> = ({
         actionsRef.current = null;
       }
     };
-  }, [actionsRef]);
+  }, [actionsRef, folderHistory]);
 
   // Current items in directory / filtered
   const visibleItems = useMemo(() => {

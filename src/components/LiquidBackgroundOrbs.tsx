@@ -51,7 +51,7 @@ export const LiquidBackgroundOrbs: React.FC = () => {
   const gradients = getOrbGradients();
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" style={{ transform: 'translateZ(0)' }}>
       {/* Orb 1 */}
       <motion.div
         animate={{
@@ -60,7 +60,8 @@ export const LiquidBackgroundOrbs: React.FC = () => {
           scale: [1, 1.25, 0.9, 1],
         }}
         transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute -top-24 -left-24 w-96 h-96 rounded-full blur-3xl opacity-80 ${gradients.orb1}`}
+        className={`absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-80 ${gradients.orb1}`}
+        style={{ willChange: 'transform' }}
       />
 
       {/* Orb 2 */}
@@ -71,7 +72,8 @@ export const LiquidBackgroundOrbs: React.FC = () => {
           scale: [1, 0.9, 1.2, 1],
         }}
         transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute top-1/3 -right-28 w-[28rem] h-[28rem] rounded-full blur-3xl opacity-75 ${gradients.orb2}`}
+        className={`absolute top-1/3 -right-28 w-[28rem] h-[28rem] rounded-full opacity-75 ${gradients.orb2}`}
+        style={{ willChange: 'transform' }}
       />
 
       {/* Orb 3 */}
@@ -82,7 +84,8 @@ export const LiquidBackgroundOrbs: React.FC = () => {
           scale: [1, 1.15, 0.95, 1],
         }}
         transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute -bottom-32 left-1/4 w-[32rem] h-[32rem] rounded-full blur-3xl opacity-70 ${gradients.orb3}`}
+        className={`absolute -bottom-32 left-1/4 w-[32rem] h-[32rem] rounded-full opacity-70 ${gradients.orb3}`}
+        style={{ willChange: 'transform' }}
       />
     </div>
   );

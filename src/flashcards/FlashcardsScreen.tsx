@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import {
   Layers,
   MoreVertical,
@@ -12,12 +13,13 @@ import {
 import { FlashDeck } from '../types';
 import { storage } from '../storage/db';
 import { GlassBox } from '../components/GlassBox';
-import { SimpleInputDialog, SettingsDialog } from '../components/Dialogs';
+import { SimpleInputDialog, SettingsDialog, AiDeckDialog } from '../components/Dialogs';
 import { useTheme } from '../context/ThemeContext';
 import { triggerHaptic } from '../utils/haptics';
 
 export interface FlashcardsActionsHandle {
   createDeck: () => void;
+  generateAiDeck: () => void;
 }
 
 interface FlashcardsScreenProps {
@@ -48,6 +50,7 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
 
   // Dialogs
   const [isCreateDeckOpen, setIsCreateDeckOpen] = useState(false);
+  const [isAiDeckOpen, setIsAiDeckOpen] = useState(false);
   const [deckToRename, setDeckToRename] = useState<FlashDeck | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -64,6 +67,7 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
     if (actionsRef) {
       actionsRef.current = {
         createDeck: () => setIsCreateDeckOpen(true),
+        generateAiDeck: () => setIsAiDeckOpen(true),
       };
     }
     return () => {
@@ -299,6 +303,49 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
           storage.createDeck(name);
           setIsCreateDeckOpen(false);
           refreshDecks();
+        }}
+      />
+
+      {/* AI Generate Deck Dialog */}
+      <AiDeckDialog
+        isOpen={isAiDeckOpen}
+        onDismiss={() => setIsAiDeckOpen(false)}
+        onConfirm={async (name, topic, count) => {
+          try {
+            const baseUrl = Capacitor.isNativePlatform() 
+              ? 'https://ais-pre-egtloc5g4ul6x4r7vrdzze-479837758603.asia-east1.run.app' 
+              : '';
+            const res = await fetch(`${baseUrl}/api/generate-flashcards`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ topic, count })
+            });
+            if (!res.ok) {
+              const data = await res.json();
+              throw new Error(data.error || 'Failed to generate flashcards');
+            }
+            const data = await res.json();
+            const newDeck = storage.createDeck(name);
+            
+            // Re-fetch all decks since createDeck updates storage but returns the object.
+            // Actually, we can just mutate the newDeck we got and then save all decks.
+            if (data.cards && Array.isArray(data.cards)) {
+              data.cards.forEach((c: { front: string; back: string }) => {
+                newDeck.cards.push({
+                  id: 'card_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                  question: c.front,
+                  answer: c.back,
+                  isMastered: false
+                });
+              });
+              const updatedDecks = storage.getDecks().map(d => d.id === newDeck.id ? newDeck : d);
+              storage.saveDecks(updatedDecks);
+            }
+            setIsAiDeckOpen(false);
+            refreshDecks();
+          } catch (e: any) {
+            alert(e.message);
+          }
         }}
       />
 

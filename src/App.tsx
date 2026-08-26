@@ -1,6 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { WorkspaceType, VaultItem, FlashDeck, SpeedDialOption } from './types';
-import { storage } from './storage/db';
 import { SplashScreen } from './components/SplashScreen';
 import { FolderScreen, FolderActionsHandle } from './folder/FolderScreen';
 import { FlashcardsScreen, FlashcardsActionsHandle } from './flashcards/FlashcardsScreen';
@@ -12,6 +11,7 @@ import { WorkspaceDock } from './components/WorkspaceDock';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { LiquidBackgroundOrbs } from './components/LiquidBackgroundOrbs';
 import { initAudioOnUserInteraction } from './utils/audioAlarm';
+import { App as CapacitorApp } from '@capacitor/app';
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
@@ -32,6 +32,40 @@ function AppContent() {
   // Screen Action Refs (prevents state synchronization loops)
   const folderActionsRef = useRef<FolderActionsHandle | null>(null);
   const flashcardsActionsRef = useRef<FlashcardsActionsHandle | null>(null);
+
+  // Hardware Back Button Handler (Android)
+  useEffect(() => {
+    const handleBackButton = () => {
+      if (activeFile) {
+        setActiveFile(null);
+        return;
+      }
+      if (activeDeck) {
+        setActiveDeck(null);
+        return;
+      }
+      if (currentWorkspace === 'DATA') {
+        const handled = folderActionsRef.current?.goBack?.();
+        if (!handled) {
+          CapacitorApp.exitApp();
+        }
+        return;
+      }
+      // If at root of flashcards or any other place
+      CapacitorApp.exitApp();
+    };
+
+    const listener = CapacitorApp.addListener('backButton', (event) => {
+      if (event.canGoBack) {
+         // Optionally window.history.back() if using routing, but we are not.
+      }
+      handleBackButton();
+    });
+
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, [activeFile, activeDeck, currentWorkspace]);
 
   const handleOpenFile = useCallback((item: VaultItem) => {
     setActiveFile(item);
@@ -82,6 +116,12 @@ function AppContent() {
           onClick: () => flashcardsActionsRef.current?.createDeck(),
         },
         {
+          label: 'AI Generate Deck',
+          icon: 'Sparkles',
+          color: '#8B5CF6',
+          onClick: () => flashcardsActionsRef.current?.generateAiDeck(),
+        },
+        {
           label: 'Focus Timer',
           icon: 'Timer',
           color: '#06B6D4',
@@ -129,13 +169,7 @@ function AppContent() {
         <FlashcardRevisionScreen
           deck={activeDeck}
           onBack={() => setActiveDeck(null)}
-          onDeckUpdated={() => {
-            const allDecks = storage.getDecks();
-            const updated = allDecks.find((d) => d.id === activeDeck.id);
-            if (updated) {
-              setActiveDeck({ ...updated });
-            }
-          }}
+          onDeckUpdated={() => {}}
         />
       ) : (
         <>

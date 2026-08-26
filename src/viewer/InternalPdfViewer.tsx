@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Bookmark, Download, FileText } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Bookmark, Download, FileText, Loader2, AlertCircle } from 'lucide-react';
 import { VaultItem } from '../types';
 import { storage } from '../storage/db';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface InternalPdfViewerProps {
   item: VaultItem;
@@ -15,17 +21,14 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
   const initialPage = storage.getPdfPage(item.id) || 1;
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [zoom, setZoom] = useState(100);
-  const [isBookmarked, setIsBookmarked] = useState(() => storage.getStarredPaths().has(item.id));
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   // Save current page position bookmark
   useEffect(() => {
     storage.savePdfPage(item.id, currentPage);
   }, [item.id, currentPage]);
-
-  const handleToggleBookmark = () => {
-    const isNowStarred = storage.toggleStar(item.id);
-    setIsBookmarked(isNowStarred);
-  };
 
   const handleDownload = () => {
     if (!item.contentData) return;
@@ -33,6 +36,16 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
     a.href = item.contentData;
     a.download = item.name;
     a.click();
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setPdfError(null);
+  };
+
+  const onDocumentLoadError = (error: Error) => {
+    console.error('Error loading PDF:', error);
+    setPdfError(error.message);
   };
 
   // If item is markdown or text
@@ -45,7 +58,8 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
       : [item.contentData || '']
     : [item.contentData || ''];
 
-  const totalPages = Math.max(1, pages.length);
+  const isPdf = item.contentData?.startsWith('data:application/pdf') || item.extension === 'pdf';
+  const totalPages = isPdf ? numPages : Math.max(1, pages.length);
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0A0A0C] flex flex-col select-none overflow-hidden">
@@ -61,14 +75,14 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
           <div className="max-w-[180px] sm:max-w-md truncate">
             <h2 className="text-sm font-semibold text-white truncate">{item.name}</h2>
             <span className="text-[10px] text-white/40 uppercase tracking-wider">
-              Page {currentPage} of {totalPages} • Last Read Saved
+              Page {currentPage} of {totalPages || '?'} • Last Read Saved
             </span>
           </div>
         </div>
 
         {/* Page & Zoom Controls */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {totalPages > 1 && (
+          {((!isPdf && totalPages > 1) || (isPdf && totalPages > 0)) && (
             <div className="flex items-center bg-white/5 rounded-lg border border-white/10 p-0.5">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -92,8 +106,8 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
 
           <div className="hidden sm:flex items-center bg-white/5 rounded-lg border border-white/10 p-0.5">
             <button
-              onClick={() => setZoom((z) => Math.max(70, z - 15))}
-              disabled={zoom <= 70}
+              onClick={() => setZoom((z) => Math.max(50, z - 20))}
+              disabled={zoom <= 50}
               className="p-1.5 rounded text-white/70 hover:text-white disabled:opacity-30 transition"
             >
               <ZoomOut className="w-4 h-4" />
@@ -102,8 +116,8 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
               {zoom}%
             </span>
             <button
-              onClick={() => setZoom((z) => Math.min(180, z + 15))}
-              disabled={zoom >= 180}
+              onClick={() => setZoom((z) => Math.min(250, z + 20))}
+              disabled={zoom >= 250}
               className="p-1.5 rounded text-white/70 hover:text-white disabled:opacity-30 transition"
             >
               <ZoomIn className="w-4 h-4" />
@@ -111,7 +125,7 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
           </div>
 
           <button
-            onClick={handleToggleBookmark}
+            onClick={() => setIsBookmarked(!isBookmarked)}
             className={`p-2 rounded-lg border transition ${
               isBookmarked
                 ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
@@ -150,13 +164,41 @@ export const InternalPdfViewer: React.FC<InternalPdfViewerProps> = ({
                 {pages[currentPage - 1] || item.contentData}
               </pre>
             </div>
-          ) : item.contentData?.startsWith('data:application/pdf') || item.extension === 'pdf' ? (
-            <div className="w-full h-full flex flex-col items-center justify-center py-12">
-              <iframe
-                src={item.contentData || ''}
-                title={item.name}
-                className="w-full h-[70vh] rounded-xl border border-white/10"
-              />
+          ) : isPdf ? (
+            <div className="w-full min-h-full flex flex-col items-center justify-center">
+              {pdfError ? (
+                <div className="flex flex-col items-center text-red-400/80 p-8 text-center bg-red-950/20 rounded-2xl border border-red-500/20">
+                  <AlertCircle className="w-10 h-10 mb-3 text-red-500/60" />
+                  <p className="font-semibold text-sm">Failed to load PDF</p>
+                  <p className="text-xs opacity-75 mt-1">{pdfError}</p>
+                  <button onClick={handleDownload} className="mt-6 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-xs font-medium text-red-300">
+                    Download File Instead
+                  </button>
+                </div>
+              ) : (
+                <Document
+                  file={item.contentData}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={onDocumentLoadError}
+                  loading={
+                    <div className="flex flex-col items-center justify-center py-20 text-white/50">
+                      <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-4" />
+                      <span className="text-sm">Loading PDF Document...</span>
+                    </div>
+                  }
+                  className="flex flex-col items-center w-full"
+                >
+                  {numPages > 0 && (
+                    <Page 
+                      pageNumber={currentPage} 
+                      className="bg-white rounded-md overflow-hidden shadow-lg max-w-full"
+                      renderTextLayer={true}
+                      renderAnnotationLayer={true}
+                      width={typeof window !== 'undefined' ? Math.min(window.innerWidth - 64, 800) : 800}
+                    />
+                  )}
+                </Document>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center text-white/60">

@@ -1,0 +1,15 @@
+# Handle line endings automatically for text files
+* text=auto
+
+# Explicitly declare binary files to prevent corruption during git operations
+*.jar binary
+*.jks binary
+*.keystore binary
+*.apk binary
+*.aab binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.so binary
