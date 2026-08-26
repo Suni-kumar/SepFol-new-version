@@ -344,7 +344,11 @@ export const FlashcardsScreen: React.FC<FlashcardsScreenProps> = ({
             setIsAiDeckOpen(false);
             refreshDecks();
           } catch (e: any) {
-            alert(e.message);
+            if (e.message.includes('Failed to fetch')) {
+              alert('Server not connected. Please click "Publish" in AI Studio to deploy your server so the mobile app can reach it.');
+            } else {
+              alert(e.message);
+            }
           }
         }}
       />
